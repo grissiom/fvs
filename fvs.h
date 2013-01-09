@@ -13,6 +13,8 @@
  * The struct fvs_page is to represent the flash page on chip. We expose the
  * data structure detail here for static usage. But the implementation detail
  * might be changed in the future.
+ *
+ * This project is released to Public Domain.
  */
 
 #ifndef FVS_H
