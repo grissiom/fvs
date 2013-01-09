@@ -1,3 +1,8 @@
+/** Flash Variable System
+ *
+ * Implementations. This is part of FVS project
+ */
+
 #include <string.h>
 #include <rtthread.h>
 

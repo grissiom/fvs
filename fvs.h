@@ -14,7 +14,7 @@
  * data structure detail here for static usage. But the implementation detail
  * might be changed in the future.
  *
- * This project is released to Public Domain.
+ * The FVS project is released to Public Domain.
  */
 
 #ifndef FVS_H

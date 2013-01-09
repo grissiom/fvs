@@ -1,3 +1,8 @@
+/** Flash Variable System
+ *
+ * Usage samples. This is part of FVS project
+ */
+
 #include "fvs.h"
 
 #define   BOOT_TIME_ID    1

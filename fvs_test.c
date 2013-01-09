@@ -1,3 +1,8 @@
+/** Flash Variable System
+ *
+ * Test cases. This is part of FVS project
+ */
+
 #include <rtthread.h>
 
 #include "fvs.h"
