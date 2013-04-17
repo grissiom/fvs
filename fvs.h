@@ -23,23 +23,33 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define FVS_QUIET  0
+#define FVS_VERBOSE 1
+#define FVS_DEBUG  2
+
+#define FVS_LOG_LVL 0
+
 #if FVS_LOG_LVL >= FVS_VERBOSE
-#define fvs_verbose rt_kprintf
-#if FVS_LOG_LVL >= FVS_DEBUG
-#define fvs_debug rt_kprintf
+	#define fvs_verbose rt_kprintf
+
+	#if FVS_LOG_LVL >= FVS_DEBUG
+		#define fvs_debug rt_kprintf
+	#else
+		#define fvs_debug(...)
+	#endif
+
 #else
-#define fvs_debug(...)
-#endif
-#else
-#define fvs_verbose(...)
+	#define fvs_verbose(...)
+	#define fvs_debug(...)
 #endif
 
-typedef uint16_t fvs_id_t;
-typedef uint16_t fvs_size_t;
-typedef uint16_t fvs_native_t;
+#include "fvs_hal.h"
+
+typedef fvs_native_t fvs_id_t;
+typedef fvs_native_t fvs_size_t;
 
 /** the values after erase */
-#define FVS_END_OF_ID  ((fvs_id_t)0xFFFF)
+#define FVS_END_OF_ID  ((fvs_id_t)(-1))
 
 struct fvs_page {
 	void *base_addr;

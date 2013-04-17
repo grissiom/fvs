@@ -10,13 +10,11 @@
 
 #include "fvs.h"
 
+#define malloc  rt_malloc
+#define free    rt_free
+#define realloc rt_realloc
+
 #define ASSERT RT_ASSERT
-
-#define FVS_QUIET  0
-#define FVS_VERBOSE 1
-#define FVS_DEBUG  2
-
-#define FVS_LOG_LVL FVS_VERBOSE
 
 void fvs_page_init(struct fvs_page *page, void *base_addr, size_t size)
 {
@@ -52,46 +50,38 @@ struct fvs_vnode {
 	uint8_t data[0];
 } __attribute__((packed));
 
-static rt_err_t flash_write_uint16(void* addr, uint16_t data)
+static rt_err_t vn_do_create(
+		struct fvs_page *page,
+		struct fvs_vnode *node,
+		fvs_id_t id,
+		fvs_size_t size)
 {
-	FLASH_Status res;
-	/*FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR);*/
-	fvs_debug("FVS: write %X to 0x%p\n", data, addr);
-	res = FLASH_ProgramHalfWord((uint32_t)addr, data);
-	if (res != FLASH_COMPLETE)
-		return -RT_ERROR;
-
-	return RT_EOK;
-}
-
-static rt_err_t vn_do_create(struct fvs_vnode *node, fvs_id_t id, fvs_size_t size)
-{
-	FLASH_UnlockBank1();
-	FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR);
+	fvs_begin_write(page);
 
 	fvs_verbose("FVS: do create vnode on 0x%p, ", node);
 	fvs_verbose("id: %d, size %d\n", id, size);
 
-	flash_write_uint16(&node->id, id);
-	flash_write_uint16(&node->size, size);
-	flash_write_uint16(&node->status, FVS_VN_STATUS_EMPTY);
+	fvs_native_write(&node->id, id);
+	fvs_native_write(&node->size, size);
+	fvs_native_write(&node->status, FVS_VN_STATUS_EMPTY);
 
-	FLASH_LockBank1();
+	fvs_end_write(page);
 
 	return RT_EOK;
 }
 
-static void vn_mark_written(struct fvs_vnode *node)
+static void vn_mark_written(
+		struct fvs_page *page,
+		struct fvs_vnode *node)
 {
-	FLASH_UnlockBank1();
-	FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR);
+	fvs_begin_write(page);
 
 	fvs_verbose("FVS: mark 0x%p as written, ", node);
 	fvs_verbose("id: %d, size %d\n", node->id, node->size);
 
-	flash_write_uint16(&node->status, FVS_VN_STATUS_WRITTEN);
+	fvs_native_write(&node->status, FVS_VN_STATUS_WRITTEN);
 
-	FLASH_LockBank1();
+	fvs_end_write(page);
 }
 
 static int vn_is_empty(struct fvs_vnode *node)
@@ -99,16 +89,17 @@ static int vn_is_empty(struct fvs_vnode *node)
 	return node->status == FVS_VN_STATUS_EMPTY;
 }
 
-static void vn_mark_invalid(struct fvs_vnode *node)
+static void vn_mark_invalid(
+		struct fvs_page *page,
+		struct fvs_vnode *node)
 {
-	FLASH_UnlockBank1();
-	FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR);
+	fvs_begin_write(page);
 
 	fvs_verbose("FVS: mark 0x%p as invalid, ", node);
 	fvs_verbose("id: %d, size %d\n", node->id, node->size);
-	flash_write_uint16(&node->id, 0);
+	fvs_native_write(&node->id, 0);
 
-	FLASH_LockBank1();
+	fvs_end_write(page);
 }
 
 static inline int vn_is_valid(struct fvs_vnode *node)
@@ -200,12 +191,15 @@ void *fvs_vnode_get(struct fvs_page *page, fvs_id_t id, size_t size)
 		return NULL;
 
 	/* there is enough space to create the node we need. */
-	vn_do_create(node, id, size);
+	vn_do_create(page, node, id, size);
 
 	return node->data;
 }
 
-static rt_err_t vn_fill_data(struct fvs_vnode *node, void* data)
+static rt_err_t vn_fill_data(
+		struct fvs_page *page,
+		struct fvs_vnode *node,
+		void* data)
 {
 	fvs_size_t i;
 	uint8_t *pdata = data;
@@ -218,15 +212,14 @@ static rt_err_t vn_fill_data(struct fvs_vnode *node, void* data)
 		  node, data);
 	fvs_verbose("id: %d, size: %d\n", node->id, node->size);
 
-	FLASH_UnlockBank1();
-	FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR);
+	fvs_begin_write(page);
 
 	for (i = 0; i < node->size; i += 2)
-		flash_write_uint16((char*)&node->data + i,
+		fvs_native_write((char*)&node->data + i,
 				   *(uint16_t*)(pdata + i));
-	vn_mark_written(node);
+	vn_mark_written(page, node);
 
-	FLASH_LockBank1();
+	fvs_end_write(page);
 	return RT_EOK;
 }
 
@@ -244,7 +237,7 @@ void fvs_vnode_delete(struct fvs_page *page, fvs_id_t id, fvs_size_t size)
 	fvs_verbose("FVS: delete node 0x%p, ", node);
 	fvs_verbose("id: %d, size: %d\n", id, size);
 
-	vn_mark_invalid(node);
+	vn_mark_invalid(page, node);
 }
 
 rt_err_t fvs_vnode_write(struct fvs_page *page, fvs_id_t id, fvs_size_t size, void *data)
@@ -263,7 +256,7 @@ rt_err_t fvs_vnode_write(struct fvs_page *page, fvs_id_t id, fvs_size_t size, vo
 		fvs_verbose("FVS: first write on node 0x%p, ", node);
 		fvs_verbose("id: %d, size: %d\n", id, size);
 
-		vn_fill_data(node, data);
+		vn_fill_data(page, node, data);
 
 		return RT_EOK;
 	}
@@ -284,7 +277,7 @@ rt_err_t fvs_vnode_write(struct fvs_page *page, fvs_id_t id, fvs_size_t size, vo
 		buf_sz = (size_t)vn_lmap(node, vn_acc_size_all, 0);
 		buf = malloc(buf_sz);
 		if (buf == NULL) {
-			FLASH_LockBank1();
+			fvs_end_write(page);
 			return -RT_ENOMEM;
 		}
 		buf = memset(buf, -1, buf_sz);
@@ -299,20 +292,19 @@ rt_err_t fvs_vnode_write(struct fvs_page *page, fvs_id_t id, fvs_size_t size, vo
 				memcpy(&node->data, data, size);
 				break;
 			}
-			vn_mark_written(node);
+			vn_mark_written(page, node);
 		}
 
-		FLASH_UnlockBank1();
-		FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR);
+		fvs_begin_write(page);
 
 		/* erase the page and write back. */
-		FLASH_ErasePage((uint32_t)page->base_addr);
-		for (i = 0; i < buf_sz; i += 2) {
-			flash_write_uint16((char*)page->base_addr + i,
+		fvs_erase_page(page);
+		for (i = 0; i < buf_sz; i += sizeof(fvs_native_t)) {
+			fvs_native_write((char*)page->base_addr + i,
 					*(uint16_t*)((char*)buf + i));
 		}
 
-		FLASH_LockBank1();
+		fvs_end_write(page);
 
 		free(buf);
 	} else {
@@ -322,9 +314,9 @@ rt_err_t fvs_vnode_write(struct fvs_page *page, fvs_id_t id, fvs_size_t size, vo
 
 		/* mark the current node invalid and write it to the
 		 * new node. */
-		vn_mark_invalid(node);
-		vn_do_create(new_node, id, size);
-		vn_fill_data(new_node, data);
+		vn_mark_invalid(page, node);
+		vn_do_create(page, new_node, id, size);
+		vn_fill_data(page, new_node, data);
 	}
 	return RT_EOK;
 }
