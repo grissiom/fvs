@@ -6,8 +6,6 @@
 #include <string.h>
 #include <rtthread.h>
 
-#include <stm32f10x.h>
-
 #include "fvs.h"
 
 #define malloc  rt_malloc
