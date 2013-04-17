@@ -47,9 +47,9 @@ void fvs_test(void)
 
 	rt_kprintf("fvs test simple write data\n");
 	int i = 0x12345678;
-	fvs_vnode_write(&tst_pg, 1, 4, &i);
+	rt_err_t err = fvs_vnode_write(&tst_pg, 1, 4, &i);
 	if (*(int*)fvs_vnode_get(&tst_pg, 1, 4) != i) {
-		rt_kprintf("fvs write data fail\n");
+		rt_kprintf("fvs write data fail, err: %d\n", err);
 		rt_kprintf("expect %d, get %d", i, *(int*)fvs_vnode_get(&tst_pg, 1, 4));
 		return;
 	} else {
@@ -58,9 +58,9 @@ void fvs_test(void)
 
 	rt_kprintf("fvs rewrite whole page test\n");
 	i = 0x13572468;
-	fvs_vnode_write(&tst_pg, 1, 4, &i);
+	err = fvs_vnode_write(&tst_pg, 1, 4, &i);
 	if (*(int*)fvs_vnode_get(&tst_pg, 1, 4) != i) {
-		rt_kprintf("fvs write data fail\n");
+		rt_kprintf("fvs write data fail, err: %d\n", err);
 		rt_kprintf("expect %d, get %d", i, *(int*)fvs_vnode_get(&tst_pg, 1, 4));
 		return;
 	} else {
@@ -78,3 +78,8 @@ void fvs_test(void)
 		rt_kprintf("fvs del node pass\n");
 	}
 }
+
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+FINSH_FUNCTION_EXPORT(fvs_test, test the fvs);
+#endif
