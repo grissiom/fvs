@@ -18,21 +18,6 @@
 
 #define FVS_LOG_LVL FVS_VERBOSE
 
-static void dummy_log(const char *fmt, ...)
-{
-}
-
-#if FVS_LOG_LVL >= FVS_VERBOSE
-#define fvs_verbose rt_kprintf
-#if FVS_LOG_LVL >= FVS_DEBUG
-#define fvs_debug rt_kprintf
-#else
-#define fvs_debug dummy_log
-#endif
-#else
-#define fvs_verbose dummy_log
-#endif
-
 void fvs_page_init(struct fvs_page *page, void *base_addr, size_t size)
 {
 	ASSERT(page);

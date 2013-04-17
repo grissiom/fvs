@@ -23,6 +23,17 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#if FVS_LOG_LVL >= FVS_VERBOSE
+#define fvs_verbose rt_kprintf
+#if FVS_LOG_LVL >= FVS_DEBUG
+#define fvs_debug rt_kprintf
+#else
+#define fvs_debug(...)
+#endif
+#else
+#define fvs_verbose(...)
+#endif
+
 typedef uint16_t fvs_id_t;
 typedef uint16_t fvs_size_t;
 typedef uint16_t fvs_native_t;
