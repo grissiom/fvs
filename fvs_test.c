@@ -56,7 +56,7 @@ void fvs_test(void)
 	rt_err_t err = fvs_vnode_write(&tst_pg, 1, 4, &i);
 	if (*(int*)fvs_vnode_get(&tst_pg, 1, 4) != i) {
 		rt_kprintf("fvs write data fail, err: %d\n", err);
-		rt_kprintf("expect %d, get %d", i, *(int*)fvs_vnode_get(&tst_pg, 1, 4));
+		rt_kprintf("expect %d, get %d\n", i, *(int*)fvs_vnode_get(&tst_pg, 1, 4));
 		return;
 	} else {
 		rt_kprintf("fvs simple write data pass\n");
@@ -67,7 +67,7 @@ void fvs_test(void)
 	err = fvs_vnode_write(&tst_pg, 1, 4, &i);
 	if (*(int*)fvs_vnode_get(&tst_pg, 1, 4) != i) {
 		rt_kprintf("fvs write data fail, err: %d\n", err);
-		rt_kprintf("expect %d, get %d", i, *(int*)fvs_vnode_get(&tst_pg, 1, 4));
+		rt_kprintf("expect %d, get %d\n", i, *(int*)fvs_vnode_get(&tst_pg, 1, 4));
 		return;
 	} else {
 		rt_kprintf("fvs rewrite whole page pass\n");
@@ -78,7 +78,7 @@ void fvs_test(void)
 	// note the page is full
 	if (fvs_vnode_get(&tst_pg, 1, 4) != NULL) {
 		rt_kprintf("fvs del node fail\n");
-		rt_kprintf("expect %X, get %X", NULL, fvs_vnode_get(&tst_pg, 1, 4));
+		rt_kprintf("expect %X, get %X\n", NULL, fvs_vnode_get(&tst_pg, 1, 4));
 		return;
 	} else {
 		rt_kprintf("fvs del node pass\n");
