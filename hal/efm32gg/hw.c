@@ -17,12 +17,6 @@ rt_err_t fvs_native_write(void *addr, fvs_native_t data)
 	if (res != mscReturnOk)
 		return -RT_ERROR;
 
-	if (*(fvs_native_t*)addr != data)
-	{
-		rt_kprintf("FVS: write %X while got %X\n", data, *(fvs_native_t*)addr);
-		RT_ASSERT(0);
-	}
-
 	return RT_EOK;
 }
 
