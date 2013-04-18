@@ -25,8 +25,7 @@ struct fvs_vnode {
 	/* the size of variable(without this head struct) */
 	fvs_size_t size;
 	fvs_native_t status;
-	/* the data of variable */
-	uint8_t data[0];
+	/* there should be size of bytes of data followed */
 } __attribute__((packed));
 
 void fvs_page_init(struct fvs_page *page, void *base_addr, size_t size)
@@ -61,9 +60,9 @@ static rt_err_t vn_do_create(
 	fvs_verbose("FVS: do create vnode on 0x%p, ", node);
 	fvs_verbose("id: %d, size %d\n", id, size);
 
-	fvs_native_write(&node->id, id);
-	fvs_native_write(&node->size, size);
-	fvs_native_write(&node->status, FVS_VN_STATUS_EMPTY);
+	fvs_native_write((void*)&node->id, id);
+	fvs_native_write((void*)&node->size, size);
+	fvs_native_write((void*)&node->status, FVS_VN_STATUS_EMPTY);
 
 	fvs_end_write(page);
 
@@ -79,7 +78,7 @@ static void vn_mark_written(
 	fvs_verbose("FVS: mark 0x%p as written, ", node);
 	fvs_verbose("id: %d, size %d\n", node->id, node->size);
 
-	fvs_native_write(&node->status, FVS_VN_STATUS_WRITTEN);
+	fvs_native_write((void*)&node->status, FVS_VN_STATUS_WRITTEN);
 
 	fvs_end_write(page);
 }
@@ -97,17 +96,17 @@ static void vn_mark_invalid(
 
 	fvs_verbose("FVS: mark 0x%p as invalid, ", node);
 	fvs_verbose("id: %d, size %d\n", node->id, node->size);
-	fvs_native_write(&node->id, 0);
+	fvs_native_write((void*)&node->id, 0);
 
 	fvs_end_write(page);
 }
 
-static inline int vn_is_valid(struct fvs_vnode *node)
+rt_inline int vn_is_valid(struct fvs_vnode *node)
 {
 	return node->id != 0;
 }
 
-static inline struct fvs_vnode* vn_next(struct fvs_vnode *node)
+rt_inline struct fvs_vnode* vn_next(struct fvs_vnode *node)
 {
 	return (struct fvs_vnode*)((char*)node + sizeof(*node) + node->size);
 }
@@ -184,16 +183,16 @@ void *fvs_vnode_get(struct fvs_page *page, fvs_id_t id, size_t size)
 	/* return the pointer to data if it has been created. */
 	node = vn_find(page, id, size);
 	if (node->id != FVS_END_OF_ID)
-		return &node->data;
+		return node+1;
 
 	/* no enough space */
-	if ((char*)&node->data + size > (char*)page->base_addr + page->size)
+	if ((char*)(node+1) + size > (char*)page->base_addr + page->size)
 		return NULL;
 
 	/* there is enough space to create the node we need. */
 	vn_do_create(page, node, id, size);
 
-	return node->data;
+	return node+1;
 }
 
 static rt_err_t vn_fill_data(
@@ -215,7 +214,7 @@ static rt_err_t vn_fill_data(
 	fvs_begin_write(page);
 
 	for (i = 0; i < node->size; i += sizeof(fvs_native_t))
-		fvs_native_write((char*)&node->data + i,
+		fvs_native_write((char*)(node+1) + i,
 				   *(fvs_native_t*)(pdata + i));
 	vn_mark_written(page, node);
 
@@ -266,7 +265,7 @@ rt_err_t fvs_vnode_write(struct fvs_page *page, fvs_id_t id, fvs_size_t size, vo
 	 * left. The current page will be able to contain all the nodes since
 	 * we have had that node in this page. (We will return -RT_ERROR on
 	 * node not found.) */
-	if ((char*)&new_node->data + size > (char*)page->base_addr + page->size) {
+	if ((char*)(new_node+1) + size > (char*)page->base_addr + page->size) {
 		uint8_t *buf;
 		size_t buf_sz, i;
 
@@ -289,7 +288,7 @@ rt_err_t fvs_vnode_write(struct fvs_page *page, fvs_id_t id, fvs_size_t size, vo
 		     (char*)node < (char*)buf + buf_sz;
 		     node = vn_next(node)) {
 			if (node->id == id && node->size == size) {
-				memcpy(&node->data, data, size);
+				memcpy(node+1, data, size);
 				break;
 			}
 			vn_mark_written(page, node);
