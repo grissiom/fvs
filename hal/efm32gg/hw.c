@@ -10,7 +10,6 @@ rt_err_t fvs_begin_write(struct fvs_page *p)
 
 rt_err_t fvs_native_write(void *addr, fvs_native_t data)
 {
-	MSC_Init();
 	msc_Return_TypeDef res;
 	fvs_debug("FVS: write %X to 0x%p\n", data, addr);
 	res = MSC_WriteWord(addr, &data, sizeof(data));
