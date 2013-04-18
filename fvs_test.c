@@ -14,29 +14,35 @@ void fvs_test(void)
 	rt_kprintf("fvs test begin\n");
 
 	// don't need the whole physical page, 512 bytes should be enough to go
-	fvs_page_init(&tst_pg, (void*)0x0807E000, 512);
+	// stm32f10x
+	/*fvs_page_init(&tst_pg, (void*)0x0807E000, 512);*/
+	// efm32gg980
+	fvs_page_init(&tst_pg, (void*)0x7FE00, 512);
+	/*rt_kprintf("base content %X\n", *(uint32_t*)0x0FE00000);*/
+	/* reset the page */
+	fvs_erase_page(&tst_pg);
 
 	void *ppn = tst_pg.base_addr;
 	for (int i = 1; i < 512; i++) {
-		// the node header is 6 bytes, so a node is 10 bytes
-		// the loop should fall when i == 52
-		void *pn = fvs_vnode_get(&tst_pg, i, 4);
-		if (i == 52) {
+		const int dsz = 4;
+		const int nsz = 3*sizeof(fvs_native_t)+dsz;
+		void *pn = fvs_vnode_get(&tst_pg, i, dsz);
+		if (i > 512/nsz-1) {
 			if (pn != NULL) {
-				rt_kprintf("fvs_vnode_get fail on i = %d", i);
-				rt_kprintf("expect node %p, get node %p", NULL, pn);
+				rt_kprintf("fvs_vnode_get fail on i = %d\n", i);
+				rt_kprintf("expect node %p, get node %p\n", NULL, pn);
 				return;
 			} else {
 				break;
 			}
 		} else {
 			if (pn == NULL) {
-				rt_kprintf("fvs_vnode_get fail on i = %d", i);
+				rt_kprintf("fvs_vnode_get fail on i = %d\n", i);
 				return;
 			}
-			if (i != 1 && (pn - ppn) != 10) {
+			if (i != 1 && (pn - ppn) != nsz) {
 				rt_kprintf("fvs_vnode_get fail on wrong node size\n");
-				rt_kprintf("expect %d, get %d", 10, (pn-ppn));
+				rt_kprintf("expect %d, get %d\n", 10, (pn-ppn));
 				return;
 			}
 		}
