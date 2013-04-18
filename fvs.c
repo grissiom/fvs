@@ -14,25 +14,6 @@
 
 #define ASSERT RT_ASSERT
 
-void fvs_page_init(struct fvs_page *page, void *base_addr, size_t size)
-{
-	ASSERT(page);
-
-	page->base_addr = base_addr;
-	page->size      = size;
-}
-
-struct fvs_page *fvs_page_create(void *base_addr, size_t size)
-{
-	struct fvs_page *page = malloc(sizeof(*page));
-
-	if (page == NULL)
-		return NULL;
-
-	fvs_page_init(page, base_addr, size);
-	return page;
-}
-
 #define FVS_VN_STATUS_EMPTY   ((fvs_native_t)0xFFFF)
 #define FVS_VN_STATUS_WRITTEN ((fvs_native_t)0x0)
 
@@ -47,6 +28,27 @@ struct fvs_vnode {
 	/* the data of variable */
 	uint8_t data[0];
 } __attribute__((packed));
+
+void fvs_page_init(struct fvs_page *page, void *base_addr, size_t size)
+{
+	ASSERT(page);
+
+	page->base_addr = base_addr;
+	/* FVS assume we are in a memory space filled with 0xFF. So we have to
+	 * preserve one information block to hold at least the FVS_END_OF_ID */
+	page->size = size - sizeof(struct fvs_vnode);
+}
+
+struct fvs_page *fvs_page_create(void *base_addr, size_t size)
+{
+	struct fvs_page *page = malloc(sizeof(*page));
+
+	if (page == NULL)
+		return NULL;
+
+	fvs_page_init(page, base_addr, size);
+	return page;
+}
 
 static rt_err_t vn_do_create(
 		struct fvs_page *page,

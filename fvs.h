@@ -53,6 +53,8 @@ typedef fvs_native_t fvs_size_t;
 
 struct fvs_page {
 	void *base_addr;
+	/* the useable size of the page. This is smaller than the actrual size of
+	 * the page. */
 	size_t size;
 	// TODO: lock the page, maybe read-write lock is good.
 };
