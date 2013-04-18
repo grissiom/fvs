@@ -14,7 +14,7 @@
 
 #define ASSERT RT_ASSERT
 
-#define FVS_VN_STATUS_EMPTY   ((fvs_native_t)0xFFFF)
+#define FVS_VN_STATUS_EMPTY   ((fvs_native_t)-1)
 #define FVS_VN_STATUS_WRITTEN ((fvs_native_t)0x0)
 
 /* the struct is reside on the flash in most of the times. The content of
@@ -214,9 +214,9 @@ static rt_err_t vn_fill_data(
 
 	fvs_begin_write(page);
 
-	for (i = 0; i < node->size; i += 2)
+	for (i = 0; i < node->size; i += sizeof(fvs_native_t))
 		fvs_native_write((char*)&node->data + i,
-				   *(uint16_t*)(pdata + i));
+				   *(fvs_native_t*)(pdata + i));
 	vn_mark_written(page, node);
 
 	fvs_end_write(page);
@@ -261,7 +261,7 @@ rt_err_t fvs_vnode_write(struct fvs_page *page, fvs_id_t id, fvs_size_t size, vo
 		return RT_EOK;
 	}
 
-	new_node = vn_find(page, FVS_END_OF_ID, -1);
+	new_node = vn_find(page, FVS_END_OF_ID, (fvs_size_t)-1);
 	/* we need rewrite the whole page since there is no free node
 	 * left. The current page will be able to contain all the nodes since
 	 * we have had that node in this page. (We will return -RT_ERROR on
@@ -301,7 +301,7 @@ rt_err_t fvs_vnode_write(struct fvs_page *page, fvs_id_t id, fvs_size_t size, vo
 		fvs_erase_page(page);
 		for (i = 0; i < buf_sz; i += sizeof(fvs_native_t)) {
 			fvs_native_write((char*)page->base_addr + i,
-					*(uint16_t*)((char*)buf + i));
+					*(fvs_native_t*)((char*)buf + i));
 		}
 
 		fvs_end_write(page);
