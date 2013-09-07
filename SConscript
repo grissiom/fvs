@@ -20,14 +20,8 @@ else:
     print "MCU type not supported by FVS"
     sys.exit(2)
 
-if rtconfig.CROSS_TOOL == 'keil':
-    cflags = ['--c99', '--gnu']
-else:
-    cflags = []
-
 group   = DefineGroup('fvs', src,
         depend = ['RT_USING_FVS'],
-        CPPPATH = CPPPATH,
-        CCFLAGS = cflags)
+        CPPPATH = CPPPATH)
 
 Return('group')

@@ -8,15 +8,17 @@
 #define   BOOT_TIME_ID    1
 #define   USER_INPUT_ID   2
 
-static struct fvs_page the_page;
+static const FVS_DEFINE_BLOCK(
+        the_page,
+        0x0807E000,
+        0x0807C000,
+        512);
 
 uint32_t boot_time;
 uint16_t user_input;
 
 void init(void)
 {
-	fvs_page_init(&the_page, (void*)0x0807E000, 512);
-
 	boot_time = *(uint32_t*)fvs_vnode_get(&the_page,
 			                      BOOT_TIME_ID, sizeof(boot_time));
 	if (boot_time == 0xFFFF) {
